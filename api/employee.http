@@ -1,0 +1,43 @@
+@baseUrl = http://localhost:5000/api/employees
+
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+    "username": "boyka123",
+    "password": "vitcon123",
+    "passwordConfirm": "vitcon123",
+    "email": "vitcon1234@gmail.com",
+    "phoneNumber": "0963412343",
+    "address": "Ha noi"
+}
+
+###
+GET {{baseUrl}}/deleted
+
+###
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+    "email": "vitcon123@gmail.com",
+    "password": "vitcon123"
+}
+
+###
+DELETE {{baseUrl}}/62865878da9244f709f4b5dd
+
+###
+PATCH {{baseUrl}}/62865878da9244f709f4b5dd/restore
+
+###
+POST {{baseUrl}}/token
+Content-Type: application/json
+
+{
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2Mjg2NTYyYTIwOGE4MzAxMGQ2YzAyMDUiLCJ1c2VyVHlwZSI6ImVtcGxveWVlIiwiaWF0IjoxNjUyOTcxOTQ4LCJleHAiOjE2NTM4MzU5NDh9.oAbuj0lB4iITVKJP8rpi1oeY1xjj8aU8z6ZhL4Cj1vk"
+}
+
+###
+GET {{baseUrl}}/auth
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2Mjg2NTYyYTIwOGE4MzAxMGQ2YzAyMDUiLCJ1c2VyVHlwZSI6ImVtcGxveWVlIiwiaWF0IjoxNjUyOTcxOTQ4LCJleHAiOjE2NTI5NzI4NDh9.2VOD-ND9uSIHUARubZUrrokiZ2h9j2asoNc6zch73Wc
