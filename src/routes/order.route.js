@@ -17,6 +17,26 @@ router.get(
   OrderController.getListByManager
 );
 router.get('/:id', verifyToken, OrderController.getById);
+router.delete('/:id', verifyToken, OrderController.delete);
+router.patch(
+  '/:id/confirm',
+  verifyToken,
+  verifyPermission(['admin', 'staff']),
+  OrderController.confirm
+);
+router.patch(
+  '/:id/shipping',
+  verifyToken,
+  verifyPermission(['admin', 'staff']),
+  OrderController.shipping
+);
+router.patch('/:id/payment', verifyToken, OrderController.payment);
+router.patch(
+  '/:id/cancel',
+  verifyToken,
+  verifyPermission(['admin', 'staff']),
+  OrderController.cancel
+);
 router.post('/', verifyToken, OrderController.create);
 
 module.exports = router;
