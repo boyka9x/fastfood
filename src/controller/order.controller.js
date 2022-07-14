@@ -15,13 +15,16 @@ const OrderController = {
 
     try {
       const orders = await Order.find(searchOptions)
+        .populate({
+          path: 'products.productId',
+        })
         .skip((page - 1) * limit)
         .limit(limit);
       const count = await Order.countDocuments(searchOptions);
 
       res.json({ data: orders, pagination: { _page: page, _limit: limit, _totalRecords: count } });
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      res.status(500).json({ status: 'error', message: 'Internal server error' });
     }
   },
 
@@ -36,13 +39,20 @@ const OrderController = {
 
     try {
       const orders = await Order.find(searchOptions)
+        .populate({
+          path: 'products',
+          populate: {
+            path: 'productId',
+            select: 'name',
+          },
+        })
         .skip((page - 1) * limit)
         .limit(limit);
       const count = await Order.countDocuments(searchOptions);
 
       res.json({ data: orders, pagination: { _page: page, _limit: limit, _totalRecords: count } });
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      res.status(500).json({ status: 'error', message: 'Internal server error' });
     }
   },
 
@@ -52,12 +62,23 @@ const OrderController = {
       let filterOptions = {
         _id: req.params.id,
       };
-      const order = await Order.findOne(filterOptions);
+
+      if (req.userType === 'customer') {
+        filterOptions.customerId = req.userId;
+      }
+
+      const order = await Order.findOne(filterOptions).populate({
+        path: 'products',
+        populate: {
+          path: 'productId',
+          select: 'name',
+        },
+      });
       if (!order) {
         return res.status(404).json({ success: false, message: 'Order not found' });
       }
 
-      res.json(order);
+      res.json({ status: 'success', data: order });
     } catch (error) {
       next(error);
     }
@@ -162,7 +183,7 @@ const OrderController = {
       if (!order) {
         return res.status(404).json({ success: false, message: 'Order not found' });
       }
-      res.json(order);
+      res.json({ status: 'success', message: 'Order confirmed successfully', data: order });
     } catch (error) {
       next(error);
     }
@@ -187,7 +208,7 @@ const OrderController = {
       if (!order) {
         return res.status(404).json({ success: false, message: 'Order not found' });
       }
-      res.json(order);
+      res.json({ status: 'success', message: 'Order shipping successfully', data: order });
     } catch (error) {
       next(error);
     }
@@ -217,7 +238,7 @@ const OrderController = {
       if (!order) {
         return res.status(404).json({ success: false, message: 'Order not found' });
       }
-      res.json(order);
+      res.json({ status: 'success', message: 'Order payment successfully', data: order });
     } catch (error) {
       next(error);
     }
@@ -246,7 +267,7 @@ const OrderController = {
       if (!order) {
         return res.status(404).json({ success: false, message: 'Order not found' });
       }
-      res.json(order);
+      res.json({ status: 'success', message: 'Order complete successfully', data: order });
     } catch (error) {
       next(error);
     }
@@ -273,7 +294,7 @@ const OrderController = {
         return res.status(404).json({ success: false, message: 'Order not found' });
       }
 
-      res.json(order);
+      res.json({ status: 'success', message: 'Order cancel successfully', data: order });
     } catch (error) {
       next(error);
     }
