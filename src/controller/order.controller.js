@@ -15,9 +15,6 @@ const OrderController = {
 
     try {
       const orders = await Order.find(searchOptions)
-        .populate({
-          path: 'products.productId',
-        })
         .skip((page - 1) * limit)
         .limit(limit);
       const count = await Order.countDocuments(searchOptions);
@@ -39,13 +36,6 @@ const OrderController = {
 
     try {
       const orders = await Order.find(searchOptions)
-        .populate({
-          path: 'products',
-          populate: {
-            path: 'productId',
-            select: 'name',
-          },
-        })
         .skip((page - 1) * limit)
         .limit(limit);
       const count = await Order.countDocuments(searchOptions);
@@ -67,13 +57,7 @@ const OrderController = {
         filterOptions.customerId = req.userId;
       }
 
-      const order = await Order.findOne(filterOptions).populate({
-        path: 'products',
-        populate: {
-          path: 'productId',
-          select: 'name',
-        },
-      });
+      const order = await Order.findOne(filterOptions);
       if (!order) {
         return res.status(404).json({ success: false, message: 'Order not found' });
       }
