@@ -19,7 +19,11 @@ const OrderController = {
         .limit(limit);
       const count = await Order.countDocuments(searchOptions);
 
-      res.json({ data: orders, pagination: { _page: page, _limit: limit, _totalRecords: count } });
+      res.json({
+        status: 'success',
+        data: orders,
+        pagination: { _page: page, _limit: limit, _totalRecords: count },
+      });
     } catch (error) {
       res.status(500).json({ status: 'error', message: 'Internal server error' });
     }
@@ -40,7 +44,11 @@ const OrderController = {
         .limit(limit);
       const count = await Order.countDocuments(searchOptions);
 
-      res.json({ data: orders, pagination: { _page: page, _limit: limit, _totalRecords: count } });
+      res.json({
+        status: 'success',
+        data: orders,
+        pagination: { _page: page, _limit: limit, _totalRecords: count },
+      });
     } catch (error) {
       res.status(500).json({ status: 'error', message: 'Internal server error' });
     }
@@ -59,7 +67,7 @@ const OrderController = {
 
       const order = await Order.findOne(filterOptions);
       if (!order) {
-        return res.status(404).json({ success: false, message: 'Order not found' });
+        return res.status(404).json({ status: 'error', message: 'Order not found' });
       }
 
       res.json({ status: 'success', data: order });
@@ -116,7 +124,7 @@ const OrderController = {
     const status = 'order';
 
     if (!Array.isArray(products) || products.length < 1) {
-      return res.status(404).json({ success: false, message: 'Invalid products' });
+      return res.status(404).json({ status: 'error', message: 'Invalid products' });
     }
 
     try {
@@ -139,12 +147,12 @@ const OrderController = {
       );
 
       if (!updatedOrder) {
-        res.status(401).json({ success: false, message: 'Order not found' });
+        res.status(401).json({ status: 'error', message: 'Order not found' });
       }
 
-      res.json({ success: true, message: 'Order saved successfully' });
+      res.json({ status: 'success', message: 'Order saved successfully' });
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      res.status(500).json({ status: 'error', message: 'Internal server error' });
     }
   },
 
@@ -160,7 +168,7 @@ const OrderController = {
       if (orderCondition.confirmDate !== undefined) {
         return res
           .status(400)
-          .json({ success: false, message: 'Order has been confirmed or not found' });
+          .json({ status: 'error', message: 'Order has been confirmed or not found' });
       }
 
       let updateOptions = {
@@ -172,7 +180,7 @@ const OrderController = {
       const order = await Order.findOneAndUpdate(filterOptions, updateOptions, { new: true });
 
       if (!order) {
-        return res.status(404).json({ success: false, message: 'Order not found' });
+        return res.status(404).json({ status: 'error', message: 'Order not found' });
       }
       res.json({ status: 'success', message: 'Order confirmed successfully', data: order });
     } catch (error) {
@@ -197,7 +205,7 @@ const OrderController = {
       const order = await Order.findOneAndUpdate(filterOptions, updateOptions, { new: true });
 
       if (!order) {
-        return res.status(404).json({ success: false, message: 'Order not found' });
+        return res.status(404).json({ status: 'error', message: 'Order not found' });
       }
       res.json({ status: 'success', message: 'Order shipping successfully', data: order });
     } catch (error) {
@@ -227,7 +235,7 @@ const OrderController = {
       const order = await Order.findOneAndUpdate(filterOptions, updateOptions, { new: true });
 
       if (!order) {
-        return res.status(404).json({ success: false, message: 'Order not found' });
+        return res.status(404).json({ status: 'error', message: 'Order not found' });
       }
       res.json({ status: 'success', message: 'Order payment successfully', data: order });
     } catch (error) {
@@ -250,13 +258,13 @@ const OrderController = {
 
       const orderCondition = await Order.findOne(filterOptions);
       if (orderCondition.paymentDate === undefined) {
-        return res.status(400).json({ success: false, message: 'Order not found or not payment' });
+        return res.status(400).json({ status: 'error', message: 'Order not found or not payment' });
       }
 
       const order = await Order.findOneAndUpdate(filterOptions, updateOptions, { new: true });
 
       if (!order) {
-        return res.status(404).json({ success: false, message: 'Order not found' });
+        return res.status(404).json({ status: 'error', message: 'Order not found' });
       }
       res.json({ status: 'success', message: 'Order complete successfully', data: order });
     } catch (error) {
@@ -282,7 +290,7 @@ const OrderController = {
       );
 
       if (!order) {
-        return res.status(404).json({ success: false, message: 'Order not found' });
+        return res.status(404).json({ status: 'error', message: 'Order not found' });
       }
 
       res.json({ status: 'success', message: 'Order cancel successfully', data: order });
@@ -298,12 +306,12 @@ const OrderController = {
       const orderDeleted = await Order.findOneAndDelete(orderDeleteCondition);
 
       if (!orderDeleted) {
-        return res.status(403).json({ success: false, message: 'Order not found' });
+        return res.status(403).json({ status: 'error', message: 'Order not found' });
       }
 
-      res.json({ success: true, message: 'Order deleted successfully' });
+      res.json({ status: 'success', message: 'Order deleted successfully' });
     } catch (error) {
-      return res.status(500).json({ success: false, message: 'Internal server error' });
+      return res.status(500).json({ status: 'error', message: 'Internal server error' });
     }
   },
 };
