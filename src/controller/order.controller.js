@@ -82,11 +82,18 @@ const OrderController = {
         );
       }, 0);
 
+      const newProducts = products.map((product) => ({
+        productId: product._id,
+        quantity: product.quantity,
+        price: product.priceDiscount !== 0 ? product.priceDiscount : product.price,
+        name: product.name,
+      }));
+
       const newOrder = new Order({
         totalPrice,
         comments,
         customerId,
-        products,
+        products: newProducts,
         status,
       });
 
