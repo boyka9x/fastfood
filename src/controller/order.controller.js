@@ -6,9 +6,19 @@ const OrderController = {
   getListByCustomer: async (req, res) => {
     const page = parseInt(req.query._page) || 1;
     const limit = parseInt(req.query._limit) || 5;
+    const sortCreatedAt = req.query.order_date ? 1 : -1;
     let searchOptions = {
       customerId: req.userId,
+      status: req.query.status || undefined,
+      createdAt: {
+        $gte: new Date(req.query.order_date).toISOString() || undefined,
+        $lte: new Date(),
+      },
     };
+
+    if (req.query._id) {
+      searchOptions._id = { $search: req.query._id };
+    }
 
     if (page < 1) page = 1;
     if (limit < 1) limit = 5;
@@ -16,7 +26,8 @@ const OrderController = {
     try {
       const orders = await Order.find(searchOptions)
         .skip((page - 1) * limit)
-        .limit(limit);
+        .limit(limit)
+        .sort({ createdAt: sortCreatedAt });
       const count = await Order.countDocuments(searchOptions);
 
       res.json({
@@ -33,15 +44,23 @@ const OrderController = {
   getListByManager: async (req, res) => {
     const page = parseInt(req.query._page) || 1;
     const limit = parseInt(req.query._limit) || 5;
-    let searchOptions = {};
+    const sortCreatedAt = req.query.order_date ? 1 : -1;
+    let searchOptions = {
+      status: req.query.status || undefined,
+      createdAt: { $gte: req.query.order_date || undefined, $lte: new Date() },
+    };
 
+    if (req.query._id) {
+      searchOptions._id = { $search: req.query._id };
+    }
     if (page < 1) page = 1;
     if (limit < 1) limit = 5;
 
     try {
       const orders = await Order.find(searchOptions)
         .skip((page - 1) * limit)
-        .limit(limit);
+        .limit(limit)
+        .sort({ createdAt: sortCreatedAt });
       const count = await Order.countDocuments(searchOptions);
 
       res.json({
