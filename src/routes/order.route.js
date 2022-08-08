@@ -37,6 +37,12 @@ router.patch(
   verifyPermission(['admin', 'staff']),
   OrderController.cancel
 );
+router.patch(
+  '/:id/complete',
+  verifyToken,
+  verifyPermission(['admin', 'staff']),
+  OrderController.complete
+);
 router.post('/', verifyToken, OrderController.create);
 
 module.exports = router;

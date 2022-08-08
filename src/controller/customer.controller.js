@@ -16,6 +16,17 @@ const CustomerController = {
     }
   },
 
+  // [GET] /api/customers/:id
+  getById: async (req, res) => {
+    try {
+      const user = await Customer.findOne({ _id: req.params.id }).select('-password -refreshToken');
+      if (!user) return res.status(400).json({ status: 'error', message: 'User not found' });
+      res.json({ status: 'success', data: user });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // [POST] /api/customers/register
   register: async (req, res) => {
     const { username, password, confirmPassword, phoneNumber, address } = req.body;
@@ -139,9 +150,13 @@ const CustomerController = {
       }
 
       // Create new access token
-      const accessToken = await jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: process.env.ACCESS_TOKEN_LIFE,
-      });
+      const accessToken = await jwt.sign(
+        { userId: user._id, type: user.type },
+        process.env.ACCESS_TOKEN_SECRET,
+        {
+          expiresIn: process.env.ACCESS_TOKEN_LIFE,
+        }
+      );
 
       res.json({ status: 'success', data: accessToken });
     } catch (error) {

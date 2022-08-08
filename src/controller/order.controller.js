@@ -1,23 +1,30 @@
 const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
 const Order = require('../models/order.model');
 
 const OrderController = {
   // [GET] /api/orders/customer
   getListByCustomer: async (req, res) => {
+    const { order_date } = req.query;
     const page = parseInt(req.query._page) || 1;
     const limit = parseInt(req.query._limit) || 5;
-    const sortCreatedAt = req.query.order_date ? 1 : -1;
+    const sortCreatedAt = order_date ? 1 : -1;
+
     let searchOptions = {
       customerId: req.userId,
       status: req.query.status || undefined,
-      createdAt: {
-        $gte: new Date(req.query.order_date).toISOString() || undefined,
-        $lte: new Date(),
-      },
     };
 
-    if (req.query._id) {
-      searchOptions._id = { $search: req.query._id };
+    if (req.query.id) {
+      searchOptions._id = req.query.id;
+    }
+
+    if (order_date) {
+      let orderDate = order_date.split('T')[0];
+      searchOptions.createdAt = {
+        $gte: `${orderDate}T00:00:00.000Z`,
+        $lte: `${orderDate}T23:59:59.999Z`,
+      };
     }
 
     if (page < 1) page = 1;
@@ -27,7 +34,14 @@ const OrderController = {
       const orders = await Order.find(searchOptions)
         .skip((page - 1) * limit)
         .limit(limit)
-        .sort({ createdAt: sortCreatedAt });
+        .sort({ createdAt: sortCreatedAt })
+        .populate({
+          path: 'products',
+          populate: {
+            path: 'productId',
+            model: 'products',
+          },
+        });
       const count = await Order.countDocuments(searchOptions);
 
       res.json({
@@ -42,17 +56,36 @@ const OrderController = {
 
   // [GET] /api/orders/manager
   getListByManager: async (req, res) => {
+    const { order_date, update_date, is_confirmed } = req.query;
     const page = parseInt(req.query._page) || 1;
     const limit = parseInt(req.query._limit) || 5;
     const sortCreatedAt = req.query.order_date ? 1 : -1;
     let searchOptions = {
       status: req.query.status || undefined,
-      createdAt: { $gte: req.query.order_date || undefined, $lte: new Date() },
+      employeeId: req.query.employeeId || undefined,
+      customerId: req.query.customerId || undefined,
     };
 
-    if (req.query._id) {
-      searchOptions._id = { $search: req.query._id };
+    if (order_date) {
+      let orderDate = order_date.split('T')[0];
+      searchOptions.createdAt = {
+        $gte: `${orderDate}T00:00:00.000Z`,
+        $lte: `${orderDate}T23:59:59.999Z`,
+      };
     }
+
+    if (update_date) {
+      let orderDate = update_date.split('T')[0];
+      searchOptions.updatedAt = {
+        $gte: `${orderDate}T00:00:00.000Z`,
+        $lte: `${orderDate}T23:59:59.999Z`,
+      };
+    }
+
+    if (is_confirmed === false) {
+      searchOptions.confirmDate = { $exists: false };
+    }
+
     if (page < 1) page = 1;
     if (limit < 1) limit = 5;
 
@@ -60,7 +93,15 @@ const OrderController = {
       const orders = await Order.find(searchOptions)
         .skip((page - 1) * limit)
         .limit(limit)
-        .sort({ createdAt: sortCreatedAt });
+        .sort({ createdAt: sortCreatedAt })
+        .populate({
+          path: 'products',
+          populate: {
+            path: 'productId',
+            model: 'products',
+          },
+        });
+      // .exists('confirmDate', is_confirmed || true);
       const count = await Order.countDocuments(searchOptions);
 
       res.json({
@@ -77,14 +118,20 @@ const OrderController = {
   getById: async (req, res, next) => {
     try {
       let filterOptions = {
-        _id: req.params.id,
+        id: req.params.id,
       };
 
       if (req.userType === 'customer') {
         filterOptions.customerId = req.userId;
       }
 
-      const order = await Order.findOne(filterOptions);
+      const order = await Order.findOne(filterOptions).populate({
+        path: 'products',
+        populate: {
+          path: 'productId',
+          model: 'products',
+        },
+      });
       if (!order) {
         return res.status(404).json({ status: 'error', message: 'Order not found' });
       }
@@ -151,7 +198,7 @@ const OrderController = {
         return total + product.price * product.quantity;
       }, 0);
 
-      let updateCondition = { _id: orderId, customerId, status };
+      let updateCondition = { id: orderId, customerId, status };
 
       const updatedOrder = await Order.findOneAndUpdate(
         updateCondition,
@@ -179,7 +226,7 @@ const OrderController = {
   confirm: async (req, res, next) => {
     try {
       let filterOptions = {
-        _id: req.params.id,
+        id: req.params.id,
         status: { $in: ['order', 'transaction'] },
       };
 
@@ -196,7 +243,15 @@ const OrderController = {
         status: 'transaction',
       };
 
-      const order = await Order.findOneAndUpdate(filterOptions, updateOptions, { new: true });
+      const order = await Order.findOneAndUpdate(filterOptions, updateOptions, {
+        new: true,
+      }).populate({
+        path: 'products',
+        populate: {
+          path: 'productId',
+          model: 'products',
+        },
+      });
 
       if (!order) {
         return res.status(404).json({ status: 'error', message: 'Order not found' });
@@ -211,17 +266,25 @@ const OrderController = {
   shipping: async (req, res, next) => {
     try {
       let filterOptions = {
-        _id: req.params.id,
+        id: req.params.id,
         employeeId: req.userId,
         status: 'transaction',
       };
 
       let updateOptions = {
-        shippingDate: new Date(),
+        shipmentDate: new Date(),
         status: 'shipping',
       };
 
-      const order = await Order.findOneAndUpdate(filterOptions, updateOptions, { new: true });
+      const order = await Order.findOneAndUpdate(filterOptions, updateOptions, {
+        new: true,
+      }).populate({
+        path: 'products',
+        populate: {
+          path: 'productId',
+          model: 'products',
+        },
+      });
 
       if (!order) {
         return res.status(404).json({ status: 'error', message: 'Order not found' });
@@ -236,7 +299,7 @@ const OrderController = {
   payment: async (req, res, next) => {
     try {
       let filterOptions = {
-        _id: req.params.id,
+        id: req.params.id,
         status: 'order',
       };
 
@@ -251,7 +314,15 @@ const OrderController = {
         delete updateOptions.status;
       }
 
-      const order = await Order.findOneAndUpdate(filterOptions, updateOptions, { new: true });
+      const order = await Order.findOneAndUpdate(filterOptions, updateOptions, {
+        new: true,
+      }).populate({
+        path: 'products',
+        populate: {
+          path: 'productId',
+          model: 'products',
+        },
+      });
 
       if (!order) {
         return res.status(404).json({ status: 'error', message: 'Order not found' });
@@ -266,7 +337,7 @@ const OrderController = {
   complete: async (req, res, next) => {
     try {
       let filterOptions = {
-        _id: req.params.id,
+        id: req.params.id,
         employeeId: req.userId,
         status: 'shipping',
       };
@@ -280,7 +351,15 @@ const OrderController = {
         return res.status(400).json({ status: 'error', message: 'Order not found or not payment' });
       }
 
-      const order = await Order.findOneAndUpdate(filterOptions, updateOptions, { new: true });
+      const order = await Order.findOneAndUpdate(filterOptions, updateOptions, {
+        new: true,
+      }).populate({
+        path: 'products',
+        populate: {
+          path: 'productId',
+          model: 'products',
+        },
+      });
 
       if (!order) {
         return res.status(404).json({ status: 'error', message: 'Order not found' });
@@ -295,7 +374,7 @@ const OrderController = {
   cancel: async (req, res, next) => {
     try {
       let filterOption = {
-        _id: req.params.id,
+        id: req.params.id,
         status: { $in: ['order', 'transaction', 'shipping', 'complete'] },
       };
       if (req.userType === 'staff') {
@@ -306,7 +385,13 @@ const OrderController = {
         filterOption,
         { cancelDate: new Date(), status: 'cancel' },
         { new: true }
-      );
+      ).populate({
+        path: 'products',
+        populate: {
+          path: 'productId',
+          model: 'products',
+        },
+      });
 
       if (!order) {
         return res.status(404).json({ status: 'error', message: 'Order not found' });
@@ -321,7 +406,7 @@ const OrderController = {
   // [DELETE] /api/orders/:id
   delete: async (req, res) => {
     try {
-      const orderDeleteCondition = { _id: req.params.id, customer: req.userId, status: 'order' };
+      const orderDeleteCondition = { id: req.params.id, customer: req.userId, status: 'order' };
       const orderDeleted = await Order.findOneAndDelete(orderDeleteCondition);
 
       if (!orderDeleted) {

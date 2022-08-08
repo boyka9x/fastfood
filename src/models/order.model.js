@@ -30,6 +30,4 @@ const Order = new Schema(
   }
 );
 
-Order.index({ customerId: 'text' });
-
 module.exports = mongoose.model('orders', Order);

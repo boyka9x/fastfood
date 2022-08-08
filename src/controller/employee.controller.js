@@ -25,11 +25,12 @@ const EmployeeController = {
       const count = await Employee.countDocuments(searchOptions);
 
       res.json({
+        status: 'success',
         data: employees,
         pagination: { _page: page, _limit: limit, _totalRecords: count },
       });
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      res.status(500).json({ status: 'error', message: 'Internal server error' });
     }
   },
 
@@ -53,11 +54,12 @@ const EmployeeController = {
       const count = await Employee.countDocumentsDeleted(searchOptions);
 
       res.json({
+        status: 'success',
         data: employees,
         pagination: { _page: page, _limit: limit, _totalRecords: count },
       });
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      res.status(500).json({ status: 'error', message: 'Internal server error' });
     }
   },
 
@@ -69,12 +71,12 @@ const EmployeeController = {
       );
 
       if (!employee) {
-        return res.status(401).json({ success: false, message: 'Employee not found' });
+        return res.status(400).json({ status: 'error', message: 'Employee not found' });
       }
 
-      res.json(employee);
+      res.json({ status: 'success', data: employee });
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      res.status(500).json({ status: 'error', message: 'Internal server error' });
     }
   },
 
@@ -87,24 +89,24 @@ const EmployeeController = {
     if (!username || !password || !email || !address) {
       return res
         .status(400)
-        .json({ success: false, message: 'Invalid username or password or information' });
+        .json({ status: 'error', message: 'Invalid username or password or information' });
     }
 
     // Check regex phone number
     if (!validation.isVietnamesePhoneNumber(phoneNumber)) {
-      return res.status(400).json({ success: false, message: 'Invalid phone number' });
+      return res.status(400).json({ status: 'error', message: 'Invalid phone number' });
     }
 
     // Match password
     if (password !== passwordConfirm) {
-      return res.status(400).json({ success: false, message: 'Password not match' });
+      return res.status(400).json({ status: 'error', message: 'Password not match' });
     }
 
     try {
       // Check if email used
       const employee = await Employee.findOne({ email });
       if (employee) {
-        return res.status(400).json({ success: false, message: 'Email already used' });
+        return res.status(400).json({ status: 'error', message: 'Email already used' });
       }
 
       // All good
@@ -117,23 +119,14 @@ const EmployeeController = {
         password: hashPassword,
         image: image || '',
         address,
-        type: type || 'employee',
+        type: type || 'staff',
       });
 
       await newUser.save();
 
-      // return JWT
-      const accessToken = await jwt.sign(
-        { userId: newUser._id, userType: newUser.type },
-        process.env.ACCESS_TOKEN_SECRET,
-        {
-          expiresIn: process.env.ACCESS_TOKEN_LIFE,
-        }
-      );
-
-      res.json({ success: true, message: 'User saved successfully', accessToken });
+      res.json({ status: 'success', message: 'User saved successfully' });
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      res.status(500).json({ status: 'error', message: 'Internal server error' });
     }
   },
 
@@ -144,24 +137,24 @@ const EmployeeController = {
 
     // Simple validation
     if (!email || !password) {
-      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+      return res.status(400).json({ status: 'error', message: 'Invalid email or password' });
     }
 
     try {
       const employee = await Employee.findOne({ email });
       if (!employee) {
-        return res.status(401).json({ success: false, message: 'Incorrect email or password' });
+        return res.status(400).json({ status: 'error', message: 'Incorrect email or password' });
       }
 
       // Compare password
       const isWatch = await bcrypt.compare(password, employee.password);
       if (!isWatch) {
-        return res.status(400).json({ success: false, message: 'Incorrect username or password' });
+        return res.status(400).json({ status: 'error', message: 'Incorrect username or password' });
       }
 
       // Access token
       const accessToken = await jwt.sign(
-        { userId: employee._id, userType: employee.type },
+        { userId: employee._id, type: employee.type },
         process.env.ACCESS_TOKEN_SECRET,
         {
           expiresIn: process.env.ACCESS_TOKEN_LIFE,
@@ -170,7 +163,7 @@ const EmployeeController = {
 
       // Refresh token
       const refreshToken = await jwt.sign(
-        { userId: employee._id, userType: employee.type },
+        { userId: employee._id, type: employee.type },
         process.env.REFRESH_TOKEN_SECRET,
         { expiresIn: process.env.REFRESH_TOKEN_LIFE }
       );
@@ -179,13 +172,15 @@ const EmployeeController = {
       await Employee.findOneAndUpdate({ _id: employee._id }, { refreshToken });
 
       res.json({
-        success: true,
+        status: 'success',
         message: 'User login successfully',
-        accessToken,
-        refreshToken,
+        data: {
+          accessToken,
+          refreshToken,
+        },
       });
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      res.status(500).json({ status: 'error', message: 'Internal server error' });
     }
   },
 
@@ -195,7 +190,7 @@ const EmployeeController = {
 
     // Simple validation
     if (!username || !email || !phoneNumber || !address) {
-      return res.status(400).json({ success: false, message: 'Invalid information' });
+      return res.status(400).json({ status: 'error', message: 'Invalid information' });
     }
 
     try {
@@ -209,12 +204,12 @@ const EmployeeController = {
       updatedEmployee = await Employee.findOne({ _id: req.userId }, updatedEmployee, { new: true });
 
       if (!updatedEmployee) {
-        return res.status(401).json({ success: false, message: 'Employee not found' });
+        return res.status(400).json({ status: 'error', message: 'Employee not found' });
       }
 
-      res.json({ success: true, message: 'Employee updated successfully' });
+      res.json({ status: 'success', message: 'Employee updated successfully' });
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      res.status(500).json({ success: 'error', message: 'Internal server error' });
     }
   },
 
@@ -224,12 +219,12 @@ const EmployeeController = {
       const deletedEmployee = await Employee.delete({ _id: req.params.id });
 
       if (!deletedEmployee) {
-        return res.status(401).json({ success: false, message: 'Employee not found' });
+        return res.status(400).json({ status: 'error', message: 'Employee not found' });
       }
 
-      res.json({ success: true, message: 'Employee deleted successfully' });
+      res.json({ status: 'success', message: 'Employee deleted successfully' });
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      res.status(500).json({ status: 'error', message: 'Internal server error' });
     }
   },
 
@@ -239,12 +234,12 @@ const EmployeeController = {
       const restoredEmployee = await Employee.restore({ _id: req.params.id });
 
       if (!restoredEmployee) {
-        return res.status(404).json({ success: false, message: 'Employee not found' });
+        return res.status(404).json({ status: 'error', message: 'Employee not found' });
       }
 
-      res.json({ success: true, message: 'Employee restored' });
+      res.json({ status: 'success', message: 'Employee restored' });
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      res.status(500).json({ status: 'error', message: 'Internal server error' });
     }
   },
 
@@ -253,7 +248,7 @@ const EmployeeController = {
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
-      return res.status(404).json({ success: false, message: 'Invalid refresh token' });
+      return res.status(404).json({ status: 'error', message: 'Invalid refresh token' });
     }
 
     try {
@@ -261,21 +256,21 @@ const EmployeeController = {
       const employee = await Employee.findOne({ _id: userId });
 
       if (employee.refreshToken !== refreshToken) {
-        return res.status(400).json({ success: false, message: 'Mismatch refresh token' });
+        return res.status(400).json({ status: 'error', message: 'Mismatch refresh token' });
       }
 
       // Create new access token for employee
       const accessToken = await jwt.sign(
-        { userId: employee._id, userType: employee.type },
+        { userId: employee._id, type: employee.type },
         process.env.ACCESS_TOKEN_SECRET,
         {
           expiresIn: process.env.ACCESS_TOKEN_LIFE,
         }
       );
 
-      res.json(accessToken);
+      res.json({ status: 'success', data: accessToken });
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      res.status(500).json({ status: 'error', message: 'Internal server error' });
     }
   },
 };

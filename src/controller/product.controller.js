@@ -76,7 +76,7 @@ const ProductController = {
         .exec((err, product) => {
           if (err) return res.status(500).json({ err });
 
-          res.json(product);
+          res.json({ status: 'success', data: product });
         });
     } catch (error) {
       res.status(500).json({ status: 'error', message: 'Internal server error' });
@@ -107,8 +107,12 @@ const ProductController = {
   create: async (req, res) => {
     const { name, price, priceDiscount, status, type, image } = req.body;
 
-    if (!name || !price || !status || !type) {
-      return res.status(400).json({ status: 'error', message: 'Invalid product' });
+    if (!name || price <= 0 || !type) {
+      return res.status(400).json({ status: 'error', message: 'Invalid product info' });
+    }
+
+    if (priceDiscount > price) {
+      return res.status(400).json({ status: 'error', message: 'Invalid product price' });
     }
 
     try {
