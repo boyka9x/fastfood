@@ -64,9 +64,26 @@ const EmployeeController = {
   },
 
   // [GET] /api/employees/auth
-  getById: async (req, res) => {
+  auth: async (req, res) => {
     try {
       const employee = await Employee.findOne({ _id: req.userId }).select(
+        '-password -refreshToken'
+      );
+
+      if (!employee) {
+        return res.status(400).json({ status: 'error', message: 'Employee not found' });
+      }
+
+      res.json({ status: 'success', data: employee });
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: 'Internal server error' });
+    }
+  },
+
+  // [GET] /api/employees/:id
+  getById: async (req, res) => {
+    try {
+      const employee = await Employee.findOne({ _id: req.params.id }).select(
         '-password -refreshToken'
       );
 
@@ -117,7 +134,7 @@ const EmployeeController = {
         email,
         phoneNumber,
         password: hashPassword,
-        image: image || '',
+        image,
         address,
         type: type || 'staff',
       });
@@ -184,14 +201,18 @@ const EmployeeController = {
     }
   },
 
-  // [PUT] /api/employees
+  // [POST] /api/employees
   update: async (req, res) => {
-    const { username, email, phoneNumber, image, address } = req.body;
+    const { username, email, phoneNumber, image, address, type, _id } = req.body;
 
     // Simple validation
     if (!username || !email || !phoneNumber || !address) {
       return res.status(400).json({ status: 'error', message: 'Invalid information' });
     }
+
+    let filterOptions = {
+      _id: req.userType === 'admin' ? _id : req.userId,
+    };
 
     try {
       let updatedEmployee = {
@@ -200,8 +221,11 @@ const EmployeeController = {
         phoneNumber,
         image: image || '',
         address,
+        type,
       };
-      updatedEmployee = await Employee.findOne({ _id: req.userId }, updatedEmployee, { new: true });
+      updatedEmployee = await Employee.findOneAndUpdate(filterOptions, updatedEmployee, {
+        new: true,
+      });
 
       if (!updatedEmployee) {
         return res.status(400).json({ status: 'error', message: 'Employee not found' });
