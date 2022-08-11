@@ -118,7 +118,7 @@ const OrderController = {
   getById: async (req, res, next) => {
     try {
       let filterOptions = {
-        id: req.params.id,
+        _id: req.params.id,
       };
 
       if (req.userType === 'customer') {
@@ -198,7 +198,7 @@ const OrderController = {
         return total + product.price * product.quantity;
       }, 0);
 
-      let updateCondition = { id: orderId, customerId, status };
+      let updateCondition = { _id: orderId, customerId, status };
 
       const updatedOrder = await Order.findOneAndUpdate(
         updateCondition,
@@ -226,7 +226,7 @@ const OrderController = {
   confirm: async (req, res, next) => {
     try {
       let filterOptions = {
-        id: req.params.id,
+        _id: req.params.id,
         status: { $in: ['order', 'transaction'] },
       };
 
@@ -266,7 +266,7 @@ const OrderController = {
   shipping: async (req, res, next) => {
     try {
       let filterOptions = {
-        id: req.params.id,
+        _id: req.params.id,
         employeeId: req.userId,
         status: 'transaction',
       };
@@ -299,7 +299,7 @@ const OrderController = {
   payment: async (req, res, next) => {
     try {
       let filterOptions = {
-        id: req.params.id,
+        _id: req.params.id,
         status: 'order',
       };
 
@@ -337,7 +337,7 @@ const OrderController = {
   complete: async (req, res, next) => {
     try {
       let filterOptions = {
-        id: req.params.id,
+        _id: req.params.id,
         employeeId: req.userId,
         status: 'shipping',
       };
@@ -374,7 +374,7 @@ const OrderController = {
   cancel: async (req, res, next) => {
     try {
       let filterOption = {
-        id: req.params.id,
+        _id: req.params.id,
         status: { $in: ['order', 'transaction', 'shipping', 'complete'] },
       };
       if (req.userType === 'staff') {
@@ -406,7 +406,7 @@ const OrderController = {
   // [DELETE] /api/orders/:id
   delete: async (req, res) => {
     try {
-      const orderDeleteCondition = { id: req.params.id, customer: req.userId, status: 'order' };
+      const orderDeleteCondition = { _id: req.params.id, customer: req.userId, status: 'order' };
       const orderDeleted = await Order.findOneAndDelete(orderDeleteCondition);
 
       if (!orderDeleted) {
